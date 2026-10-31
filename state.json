@@ -3,7 +3,7 @@
   "MorningSent": true,
   "AllDoneSent": false,
   "NightSent": true,
-  "LastReminder": "2026-11-01T01:35:52.3035277+02:00",
+  "LastReminder": "2026-11-01T01:49:20.1365119+02:00",
   "Cards": {
     "38dd7df0-d982-806b-80d2-fe9ad4b687fc": {
       "MessageId": 47,
@@ -18,14 +18,14 @@
       "Sig": "26D106962582617935D766A3B95367B53DF4CFCF79C712272DA90567CF48598B"
     },
     "40ad7df0-d982-8033-ada2-fd6840eb018a": {
-      "MessageId": 53,
+      "MessageId": 56,
       "Done": false,
       "Title": "Task All",
       "Sig": "5FB6CB1E348A6C4DD7EF7B84513AA526E8F4540857E0B4C886D94616492E33B7"
     },
     "40ad7df0-d982-808a-be3a-dfdfc738e8ef": {
       "MessageId": 51,
-      "Done": false,
+      "Done": true,
       "Title": "ENGLISH",
       "Sig": "599A39159C29465946C34C094C23C3D6305D01D2541CA2E5C4F74FCE90AE8364"
     }
