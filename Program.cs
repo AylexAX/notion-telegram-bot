@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Net.Http.Headers;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -31,26 +32,62 @@ static class Cfg
 // ============================================================
 static class Msg
 {
-    public const string Seeds = "🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱";
     public const string Top = "╭━━━━━━━━━━━━╮";
     public const string Bot = "╰━━━━━━━━━━━━╯";
 
-    // رسالة الصبح
-    public static string Morning(int n)
+    // أرقام بخط عريض: 15 -> 𝟭𝟱
+    static string B(string s)
     {
-        var tz = TimeZoneInfo.FindSystemTimeZoneById(Cfg.TimeZoneId);
-        var day = TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, tz).AddHours(-Cfg.DayStartHour);
-        var date = day.ToString("d/M/yyyy", CultureInfo.InvariantCulture);
-        return $"{Seeds}\n{Top}\n" +
-               "┃ 》 GOOD MORNING! 🌅\n┃ 》 HELLO, ARTIST 🎨\n┃\n" +
-               "┃■■■■■■■■■■■■■■■\n┃ ✦ NEW DAY, NEW CHANCES\n┃■■■■■■■■■■■■■■■\n┃\n" +
-               $"┃ ● 🗓️ [ {date} ]\n┃•━━━━━━━━━•\n┃ ARE YOU READY 👨‍🎨🎨\n{Bot}";
+        var sb = new StringBuilder();
+        foreach (var c in s)
+        {
+            if (c >= '0' && c <= '9') sb.Append(char.ConvertFromUtf32(0x1D7EC + (c - '0')));
+            else sb.Append(c);
+        }
+        return sb.ToString();
+    }
+
+    // رسالة الصبح: النسبة = اليوم ÷ عدد أيام الشهر
+    public static string Morning(DateTime dayDate)
+    {
+        int dim = DateTime.DaysInMonth(dayDate.Year, dayDate.Month);
+        int pct = (int)Math.Round(dayDate.Day * 100.0 / dim, MidpointRounding.AwayFromZero);
+        int filled = (int)Math.Round(dayDate.Day * 10.0 / dim, MidpointRounding.AwayFromZero);
+        var date = dayDate.ToString("d/M/yyyy", CultureInfo.InvariantCulture);
+
+        return "┏━━━━━━━━━━━━━━━\n" +
+               "┃ ☀️ 𝗚𝗢𝗢𝗗 𝗠𝗢𝗥𝗡𝗜𝗡𝗚 𝗔𝗿𝘁𝗶𝘀𝘁\n" +
+               "┣━━━━━━━━━━━━━━━\n" +
+               $"┃ 🗓 {B(date)}\n" +
+               $"┃ ⏳ 𝗗𝗮𝘆 {Blocks(filled)} {B(pct.ToString())}%\n" +
+               "┣━━━━━━━━━━━━━━━\n" +
+               "┃ 🎯 𝗧𝗼𝗱𝗮𝘆'𝘀 𝗙𝗼𝗰𝘂𝘀 𝗼𝗻 𝗧𝗵𝗶𝘀 𝗧𝗮𝘀𝗸𝘀\n" +
+               "┗━━━━━━━━━━━━━━━";
     }
 
     public const string NoTasks =
         Top + "\n☀️ GOOD MORNING!\n" + Bot + "\nالنهارده مفيش مهام اتضافت 📝\nضيف مهامك في نوشن وهتوصلك هنا";
 
-    public const string NewTask = Top + "\n🆕 NEW TASK ADDED\n" + Bot;
+    // إشعار عام لأي تغيير حصل (title لازم يكون معمول له Esc قبل ما يتبعت هنا)
+    public static string Notice(string head, string text) =>
+        $"{Top}\n{head}\n{Bot}\n{text}";
+
+    public static string NewTask(string title) =>
+        Notice("🆕 NEW TASK ADDED", $"خلي بالك، في مهمة انضافت:\n<b>{title}</b>");
+
+    public static string Edited(string title) =>
+        Notice("✏️ TASK UPDATED", $"خلي بالك، في مهمة اتعدّلت في نوشن:\n<b>{title}</b>");
+
+    public static string Removed(string title) =>
+        Notice("🗑️ TASK REMOVED", $"خلي بالك، مهمة اتشالت من مهام النهارده:\n<b>{title}</b>");
+
+    public static string DoneInNotion(string title, bool done) =>
+        done ? Notice("✅ DONE IN NOTION", $"علّمت المهمة تمت في نوشن:\n<b>{title}</b>")
+             : Notice("⏳ REOPENED IN NOTION", $"رجّعت المهمة لسه ماخلصتش في نوشن:\n<b>{title}</b>");
+
+    // المتبقي بعد أي تغيير
+    public static string Remaining(int done, int total) =>
+        $"{Top}\n📋 REMAINING TASKS\n{Bot}\n{Bar(done, total)} {done}/{total}\nالمتبقي 👇";
 
     // "عدّت 4 ساعات"
     public static string Reminder(int done, int total) =>
@@ -69,10 +106,13 @@ static class Msg
              : $"أنا رجّعت المهمة لسه ماخلصتش\n<b>{title}</b> ← في Notion ⏳";
 
     // كارت المهمة
-    public static string Card(int i, string icon, string title, string time, string desc) =>
-        $"╭━━━━━━━━╮\n🌱 📌 TASK {i:D2}\n╰━━━━━━━━╯\n" +
-        $"╭━━━━━━━━━━╮\n{icon} {title}\n🕔 {time}\n╰━━━━━━━━━━╯\n" +
-        $"╭━━━━━━━━╮\n◈ DESCRIPTION ◈\n\n{desc}\n╰━━━━━━━━╯";
+    public static string Card(int i, string icon, string title, string time, string desc)
+    {
+        var descLines = string.Join("\n", desc.Split('\n').Select(l => "┃ " + l));
+        return $"┏━━━━━━━━━╮\n┃ 📌 TASK {i:D2}\n┣━━━━━━━━\n" +
+               $"┃ {icon} {title}\n┃ 🕔 {time}\n┣━━━━━━━━\n" +
+               $"┃ ◈ DESCRIPTION\n{descLines}\n┗━━━━━━━━━╯";
+    }
 
     // كل سطر في الوصف يبدأ بنقطة
     public static string Bulletize(string content)
@@ -90,11 +130,14 @@ static class Msg
         return string.Join("\n", res);
     }
 
-    static string Bar(int done, int total)
+    static string Blocks(int filled)
     {
-        int filled = total == 0 ? 0 : done * 10 / total;
+        if (filled < 0) filled = 0;
+        if (filled > 10) filled = 10;
         return new string('▓', filled) + new string('░', 10 - filled);
     }
+
+    static string Bar(int done, int total) => Blocks(total == 0 ? 0 : done * 10 / total);
 }
 
 // ============================================================
@@ -107,6 +150,8 @@ class CardInfo
 {
     public long MessageId { get; set; }
     public bool Done { get; set; }
+    public string Title { get; set; } = "";   // لاكتشاف الحذف وكتابة الاسم
+    public string Sig { get; set; } = "";     // بصمة المحتوى لاكتشاف التعديل
 }
 
 class State
@@ -135,6 +180,9 @@ class Program
     static readonly TimeZoneInfo Tz = TimeZoneInfo.FindSystemTimeZoneById(Cfg.TimeZoneId);
     const string StatePath = "state.json";
 
+    // المهام اللي اتغيّرت بضغطة زرار من تليجرام في التشغيلة دي
+    static readonly HashSet<string> Pressed = new();
+
     static string Env(string k) =>
         Environment.GetEnvironmentVariable(k) ?? throw new Exception($"Missing env var: {k}");
 
@@ -160,13 +208,21 @@ class Program
             var tasks = await FetchTasks(winStart, winEnd);
             int total = tasks.Count;
 
-            // 3) لو غيّرت DONE من نوشن مباشرة، حدّث شكل الزرار
-            await SyncButtons(st, tasks);
-
             var pending = tasks.Where(t => !t.Done).ToList();
             int done = total - pending.Count;
             var morningTime = At(dayDate, Cfg.MorningAt);
             var nightTime = At(dayDate, Cfg.NightAt);
+
+            int changes = 0;                       // عدد التغييرات في التشغيلة دي
+            bool morningJustSent = false;
+            var fresh = new HashSet<string>();     // كروت اتبعتت في التشغيلة دي
+
+            // 3) تغييرات حصلت في نوشن (DONE / تعديل / حذف) بعد رسالة الصبح
+            if (st.MorningSent)
+            {
+                changes += Pressed.Count;
+                changes += await SyncChanges(st, tasks);
+            }
 
             // 4) رسالة الصبح
             if (!st.MorningSent && now >= morningTime)
@@ -177,25 +233,39 @@ class Program
                 }
                 else
                 {
-                    await SendText(Msg.Morning(total));
+                    await SendText(Msg.Morning(dayDate));
                     for (int i = 0; i < total; i++) await SendCard(st, tasks[i], i + 1, total);
                 }
                 st.MorningSent = true;
                 st.LastReminder = now;
                 st.AllDoneSent = pending.Count == 0;
+                morningJustSent = true;
             }
             // 5) مهام جديدة بعد رسالة الصبح
             else if (st.MorningSent)
             {
                 foreach (var t in tasks.Where(t => !st.Cards.ContainsKey(t.Id)).ToList())
                 {
-                    await SendText(Msg.NewTask);
+                    await SendText(Msg.NewTask(Esc(t.Title)));
                     await SendCard(st, t, tasks.IndexOf(t) + 1, total);
+                    fresh.Add(t.Id);
+                    changes++;
                     st.AllDoneSent = false;
                 }
             }
 
-            // 6) خلصت كل المهام
+            // 6) بعد أي تغيير: ابعت المتبقي
+            bool sentRemaining = false;
+            if (st.MorningSent && !morningJustSent && changes > 0 && pending.Count > 0)
+            {
+                await SendText(Msg.Remaining(done, total));
+                await ResendPending(st, tasks, pending, fresh);
+                st.LastReminder = now;
+                st.AllDoneSent = false;
+                sentRemaining = true;
+            }
+
+            // 7) خلصت كل المهام
             if (st.MorningSent && total > 0)
             {
                 if (pending.Count == 0 && !st.AllDoneSent)
@@ -209,7 +279,7 @@ class Program
                 }
             }
 
-            // 7) رسالة آخر الليل
+            // 8) رسالة آخر الليل
             bool sentNight = false;
             if (st.MorningSent && !st.NightSent && now >= nightTime)
             {
@@ -217,13 +287,13 @@ class Program
                 if (pending.Count > 0)
                 {
                     await SendText(Msg.Night(done, total));
-                    await ResendPending(st, tasks, pending);
+                    await ResendPending(st, tasks, pending, sentRemaining ? fresh : null);
                     st.LastReminder = now;
                     sentNight = true;
                 }
             }
 
-            // 8) "وصلت فين؟" كل كام ساعة
+            // 9) "وصلت فين؟" كل كام ساعة
             if (!sentNight && st.MorningSent && pending.Count > 0 &&
                 now >= st.LastReminder.AddHours(Cfg.ReminderEveryHours))
             {
@@ -267,6 +337,7 @@ class Program
                             [Cfg.PropDone] = new JsonObject { ["checkbox"] = !cur }
                         }
                     });
+                    Pressed.Add(id);
 
                     string title = "";
                     foreach (var kv in page["properties"]!.AsObject())
@@ -292,11 +363,18 @@ class Program
         }
     }
 
-    static async Task SyncButtons(State st, List<TaskItem> tasks)
+    // بيقارن حالة نوشن بالكروت اللي اتبعتت، وبيبعت إشعار لكل تغيير. بيرجّع عدد التغييرات
+    static async Task<int> SyncChanges(State st, List<TaskItem> tasks)
     {
-        foreach (var t in tasks)
+        int changes = 0;
+
+        for (int idx = 0; idx < tasks.Count; idx++)
         {
-            if (st.Cards.TryGetValue(t.Id, out var card) && card.Done != t.Done)
+            var t = tasks[idx];
+            if (!st.Cards.TryGetValue(t.Id, out var card)) continue;
+
+            // أ) DONE اتغيّر
+            if (card.Done != t.Done)
             {
                 await TgSafe("editMessageReplyMarkup", new JsonObject
                 {
@@ -305,8 +383,61 @@ class Program
                     ["reply_markup"] = Kb(t)
                 });
                 card.Done = t.Done;
+
+                // لو التغيير جه من زرار تليجرام، رسالة "أنا عدّلت المهمة" اتبعتت خلاص
+                if (!Pressed.Contains(t.Id))
+                {
+                    await SendText(Msg.DoneInNotion(Esc(t.Title), t.Done));
+                    changes++;
+                }
             }
+
+            // ب) الاسم أو الوقت أو المحتوى اتعدّل
+            var (text, sig) = await BuildCard(t, idx + 1);
+            if (string.IsNullOrEmpty(card.Sig))
+            {
+                // أول مرة بعد التحديث: سجّل البصمة من غير إشعار
+                card.Sig = sig;
+            }
+            else if (card.Sig != sig)
+            {
+                card.Sig = sig;
+                await SendText(Msg.Edited(Esc(t.Title)));
+                changes++;
+
+                // المهمة الخلصانة مش هتتبعت تاني، فنحدّث الكارت مكانه
+                if (t.Done)
+                {
+                    await TgSafe("editMessageText", new JsonObject
+                    {
+                        ["chat_id"] = ChatId,
+                        ["message_id"] = card.MessageId,
+                        ["text"] = text,
+                        ["parse_mode"] = "HTML",
+                        ["reply_markup"] = Kb(t)
+                    });
+                }
+            }
+            card.Title = t.Title;
         }
+
+        // ج) مهام اتشالت أو اتنقلت ليوم تاني
+        var ids = tasks.Select(x => x.Id).ToHashSet();
+        foreach (var id in st.Cards.Keys.Where(k => !ids.Contains(k)).ToList())
+        {
+            var c = st.Cards[id];
+            await TgSafe("editMessageReplyMarkup", new JsonObject
+            {
+                ["chat_id"] = ChatId,
+                ["message_id"] = c.MessageId,
+                ["reply_markup"] = new JsonObject { ["inline_keyboard"] = new JsonArray() }
+            });
+            await SendText(Msg.Removed(string.IsNullOrEmpty(c.Title) ? "—" : Esc(c.Title)));
+            st.Cards.Remove(id);
+            changes++;
+        }
+
+        return changes;
     }
 
     static JsonObject Kb(TaskItem t) => new()
@@ -319,9 +450,29 @@ class Program
     };
 
     // ---------------- إرسال الكروت ----------------
-    static async Task ResendPending(State st, List<TaskItem> all, List<TaskItem> pending)
+    static async Task ResendPending(State st, List<TaskItem> all, List<TaskItem> pending,
+                                    HashSet<string>? skip = null)
     {
-        foreach (var t in pending) await SendCard(st, t, all.IndexOf(t) + 1, all.Count);
+        foreach (var t in pending)
+        {
+            if (skip != null && skip.Contains(t.Id)) continue;
+            await SendCard(st, t, all.IndexOf(t) + 1, all.Count);
+        }
+    }
+
+    // بيبني نص الكارت + بصمة للمحتوى
+    static async Task<(string Text, string Sig)> BuildCard(TaskItem t, int i)
+    {
+        var content = await GetContent(t.Id, t.Notes);
+        var time = t.AllDay ? "ALL DAY"
+            : $"{t.Start.ToString("h:mm tt", Inv)} → {t.End.ToString("h:mm tt", Inv)}";
+        var icon = string.IsNullOrEmpty(t.Icon) ? "📝" : t.Icon;
+        var desc = Msg.Bulletize(content);
+
+        var text = Msg.Card(i, icon, Esc(t.Title), time, desc);
+        var sig = Convert.ToHexString(SHA256.HashData(
+            Encoding.UTF8.GetBytes($"{icon}|{t.Title}|{time}|{desc}")));
+        return (text, sig);
     }
 
     static async Task SendCard(State st, TaskItem t, int i, int n)
@@ -337,12 +488,7 @@ class Program
             });
         }
 
-        var content = await GetContent(t.Id, t.Notes);
-        var time = t.AllDay ? "ALL DAY"
-            : $"{t.Start.ToString("h:mm tt", Inv)} → {t.End.ToString("h:mm tt", Inv)}";
-        var icon = string.IsNullOrEmpty(t.Icon) ? "📝" : t.Icon;
-
-        var text = Msg.Card(i, icon, Esc(t.Title), time, Msg.Bulletize(content));
+        var (text, sig) = await BuildCard(t, i);
 
         var res = await Tg("sendMessage", new JsonObject
         {
@@ -351,7 +497,13 @@ class Program
             ["parse_mode"] = "HTML",
             ["reply_markup"] = Kb(t)
         });
-        st.Cards[t.Id] = new CardInfo { MessageId = res["message_id"]!.GetValue<long>(), Done = t.Done };
+        st.Cards[t.Id] = new CardInfo
+        {
+            MessageId = res["message_id"]!.GetValue<long>(),
+            Done = t.Done,
+            Title = t.Title,
+            Sig = sig
+        };
     }
 
     static Task SendText(string html) =>
