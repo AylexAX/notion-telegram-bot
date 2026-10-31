@@ -20,6 +20,10 @@ static class Cfg
     public const string PropDate = "Date";
     public const string PropDone = "DONE";
     public const string PropNotes = "NOTES";
+
+    // نصوص الأزرار (لازم الـ Worker يكون فيه نفس نص الحالة المعلّقة)
+    public const string BtnDone = "DONE ☑️";
+    public const string BtnCompleted = "COMPLETED ✅";
 }
 
 // ============================================================
@@ -27,24 +31,64 @@ static class Cfg
 // ============================================================
 static class Msg
 {
-    public const string Line = "━━━━━━━━━━━━━━";
+    public const string Seeds = "🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱🌱";
+    public const string Top = "╭━━━━━━━━━━━━╮";
+    public const string Bot = "╰━━━━━━━━━━━━╯";
 
-    public static string Morning(int n) =>
-        $"🌅 <b>صباح الخير يا فنان!</b>\nمتنساش مهام النهارده 💪\n{Line}\n📋 عندك <b>{n}</b> {(n == 1 ? "مهمة" : "مهام")} النهارده";
+    // رسالة الصبح
+    public static string Morning(int n)
+    {
+        var tz = TimeZoneInfo.FindSystemTimeZoneById(Cfg.TimeZoneId);
+        var day = TimeZoneInfo.ConvertTime(DateTimeOffset.UtcNow, tz).AddHours(-Cfg.DayStartHour);
+        var date = day.ToString("d/M/yyyy", CultureInfo.InvariantCulture);
+        return $"{Seeds}\n{Top}\n" +
+               "┃ 》 GOOD MORNING! 🌅\n┃ 》 HELLO, ARTIST 🎨\n┃\n" +
+               "┃■■■■■■■■■■■■■■■\n┃ ✦ NEW DAY, NEW CHANCES\n┃■■■■■■■■■■■■■■■\n┃\n" +
+               $"┃ ● 🗓️ [ {date} ]\n┃•━━━━━━━━━•\n┃ ARE YOU READY 👨‍🎨🎨\n{Bot}";
+    }
 
     public const string NoTasks =
-        "☀️ <b>صباح الخير يا فنان!</b>\nالنهارده مفيش مهام اتضافت.\nاتأكد لو عايز تضيف مهام في نوشن 📝";
+        Top + "\n☀️ GOOD MORNING!\n" + Bot + "\nالنهارده مفيش مهام اتضافت 📝\nضيف مهامك في نوشن وهتوصلك هنا";
 
-    public const string NewTask = "🆕 <b>في مهمة جديدة اتضافت!</b>";
+    public const string NewTask = Top + "\n🆕 NEW TASK ADDED\n" + Bot;
 
+    // "عدّت 4 ساعات"
     public static string Reminder(int done, int total) =>
-        $"⏰ <b>ها وصلت فين؟</b>\n{Bar(done, total)} {done}/{total}\nالمتبقي 👇";
+        $"{Top}\n⏰ CHECK-IN TIME\n{Bot}\nعدّت {Cfg.ReminderEveryHours} ساعات، خلصت أي TASK ولا لسا؟ 👀!!\n{Bar(done, total)} {done}/{total}\nالمتبقي 👇";
 
     public static string AllDone() =>
-        "🎉 <b>عاش يا فنان!</b>\nخلصت كل مهام النهارده 🙌\nروح ارتاح أو اتفرج على فيلم 🍿";
+        $"{Top}\n🎉 ALL DONE!\n{Bot}\nعاش يا فنان، خلصت كل مهام النهارده 🙌\nروح ارتاح أو اتفرج على فيلم 🍿";
 
+    // رسالة 12 بالليل
     public static string Night(int done, int total) =>
-        $"🌙 <b>لسه ماخلصتش المهام ليه؟</b>\n{Bar(done, total)} {done}/{total}\nروح انجز بسرعة قبل اليوم ما يخلص 🔥";
+        $"{Top}\n🌙 MIDNIGHT ALERT\n{Bot}\nالساعة 12 ولسا في مهام ماخلصتش 😤\nسيب اللي في إيدك وروح خلصها بسرعة قبل اليوم ما يخلص\n{Bar(done, total)} {done}/{total}\nالمتبقي 👇";
+
+    // رسالة بعد ما الضغطة تتنفذ (title لازم يكون معمول له Esc قبل ما يتبعت هنا)
+    public static string Updated(string title, bool done) =>
+        done ? $"أنا عدّلت المهمة بنجاح\n<b>{title}</b> ← في Notion ✅"
+             : $"أنا رجّعت المهمة لسه ماخلصتش\n<b>{title}</b> ← في Notion ⏳";
+
+    // كارت المهمة
+    public static string Card(int i, string icon, string title, string time, string desc) =>
+        $"╭━━━━━━━━╮\n🌱 📌 TASK {i:D2}\n╰━━━━━━━━╯\n" +
+        $"╭━━━━━━━━━━╮\n{icon} {title}\n🕔 {time}\n╰━━━━━━━━━━╯\n" +
+        $"╭━━━━━━━━╮\n◈ DESCRIPTION ◈\n\n{desc}\n╰━━━━━━━━╯";
+
+    // كل سطر في الوصف يبدأ بنقطة
+    public static string Bulletize(string content)
+    {
+        if (string.IsNullOrWhiteSpace(content)) return "• —";
+        var res = new List<string>();
+        foreach (var raw in content.Split('\n'))
+        {
+            var l = raw.Trim();
+            if (l == "") continue;
+            bool has = l.StartsWith("•") || l.StartsWith("▫️") || l.StartsWith("☑️") ||
+                       l.StartsWith("☐") || l.StartsWith("<b>");
+            res.Add(has ? l : "• " + l);
+        }
+        return string.Join("\n", res);
+    }
 
     static string Bar(int done, int total)
     {
@@ -105,8 +149,10 @@ class Program
 
         try
         {
-            // 1) ضغطات الأزرار اللي جت من آخر تشغيلة
-            await ProcessPresses();
+            // 1) ضغطات الأزرار اللي جت من الـ Worker
+            //    (لو الـ Worker وقع، البوت يكمّل شغله عادي)
+            try { await ProcessPresses(); }
+            catch (Exception ex) { Console.WriteLine($"ProcessPresses failed: {ex.Message}"); }
 
             // 2) مهام النهارده من نوشن
             var winStart = At(dayDate, Cfg.DayStartHour);
@@ -193,58 +239,58 @@ class Program
     }
 
     // ---------------- الأزرار ----------------
-static async Task ProcessPresses()
-{
-    var items = JsonNode.Parse(await Worker(HttpMethod.Get, "/pending"))!.AsArray();
-    if (items.Count == 0) return;
-
-    var doneKeys = new List<string>();
-    var handled = new HashSet<string>();
-
-    foreach (var it in items)
+    static async Task ProcessPresses()
     {
-        var key = it!["key"]!.GetValue<string>();
-        var data = it["data"]?.GetValue<string>() ?? "";
-        if (!data.StartsWith("t|")) { doneKeys.Add(key); continue; }
-        var id = data[2..];
+        var items = JsonNode.Parse(await Worker(HttpMethod.Get, "/pending"))!.AsArray();
+        if (items.Count == 0) return;
 
-        try
+        var doneKeys = new List<string>();
+        var handled = new HashSet<string>();
+
+        foreach (var it in items)
         {
-            if (handled.Add(id))
+            var key = it!["key"]!.GetValue<string>();
+            var data = it["data"]?.GetValue<string>() ?? "";
+            if (!data.StartsWith("t|")) { doneKeys.Add(key); continue; }
+            var id = data[2..];
+
+            try
             {
-                var page = await Notion(HttpMethod.Get, $"pages/{id}");
-                bool cur = page["properties"]?[Cfg.PropDone]?["checkbox"]?.GetValue<bool>() ?? false;
-                await Notion(new HttpMethod("PATCH"), $"pages/{id}", new JsonObject
+                if (handled.Add(id))
                 {
-                    ["properties"] = new JsonObject
+                    var page = await Notion(HttpMethod.Get, $"pages/{id}");
+                    bool cur = page["properties"]?[Cfg.PropDone]?["checkbox"]?.GetValue<bool>() ?? false;
+                    await Notion(new HttpMethod("PATCH"), $"pages/{id}", new JsonObject
                     {
-                        [Cfg.PropDone] = new JsonObject { ["checkbox"] = !cur }
-                    }
-                });
+                        ["properties"] = new JsonObject
+                        {
+                            [Cfg.PropDone] = new JsonObject { ["checkbox"] = !cur }
+                        }
+                    });
 
-                string title = "";
-                foreach (var kv in page["properties"]!.AsObject())
-                {
-                    if (kv.Value!["type"]!.GetValue<string>() == "title")
+                    string title = "";
+                    foreach (var kv in page["properties"]!.AsObject())
                     {
-                        title = PlainText(kv.Value["title"]);
-                        break;
+                        if (kv.Value!["type"]!.GetValue<string>() == "title")
+                        {
+                            title = PlainText(kv.Value["title"]);
+                            break;
+                        }
                     }
+                    await SendText(Msg.Updated(Esc(title), !cur));
                 }
-                await SendText($"✅ <b>تم التغيير</b>\n{Esc(title)} ← {(!cur ? "تمت" : "لسه ماخلصتش")}");
+                doneKeys.Add(key);
             }
-            doneKeys.Add(key);
+            catch (Exception ex) { Console.WriteLine($"Press failed for {id}: {ex.Message}"); }
         }
-        catch (Exception ex) { Console.WriteLine($"Press failed for {id}: {ex.Message}"); }
-    }
 
-    if (doneKeys.Count > 0)
-    {
-        var arr = new JsonArray();
-        foreach (var k in doneKeys) arr.Add(k);
-        await Worker(HttpMethod.Post, "/clear", new JsonObject { ["keys"] = arr });
+        if (doneKeys.Count > 0)
+        {
+            var arr = new JsonArray();
+            foreach (var k in doneKeys) arr.Add(k);
+            await Worker(HttpMethod.Post, "/clear", new JsonObject { ["keys"] = arr });
+        }
     }
-}
 
     static async Task SyncButtons(State st, List<TaskItem> tasks)
     {
@@ -267,7 +313,7 @@ static async Task ProcessPresses()
     {
         ["inline_keyboard"] = new JsonArray(new JsonArray(new JsonObject
         {
-            ["text"] = t.Done ? "✅ تمت" : "⬜ خلصتها",
+            ["text"] = t.Done ? Cfg.BtnCompleted : Cfg.BtnDone,
             ["callback_data"] = "t|" + t.Id
         }))
     };
@@ -292,14 +338,11 @@ static async Task ProcessPresses()
         }
 
         var content = await GetContent(t.Id, t.Notes);
-        var time = t.AllDay ? "طوال اليوم"
+        var time = t.AllDay ? "ALL DAY"
             : $"{t.Start.ToString("h:mm tt", Inv)} → {t.End.ToString("h:mm tt", Inv)}";
         var icon = string.IsNullOrEmpty(t.Icon) ? "📝" : t.Icon;
 
-        var text =
-            $"📌 <b>المهمة {i} من {n}</b>\n{Msg.Line}\n" +
-            $"{icon} <b>{Esc(t.Title)}</b>\n🕔 {time}\n{Msg.Line}\n" +
-            (content == "" ? "—" : content);
+        var text = Msg.Card(i, icon, Esc(t.Title), time, Msg.Bulletize(content));
 
         var res = await Tg("sendMessage", new JsonObject
         {
@@ -442,7 +485,8 @@ static async Task ProcessPresses()
         if (!resp.IsSuccessStatusCode) throw new Exception($"Notion {(int)resp.StatusCode}: {text}");
         return JsonNode.Parse(text)!;
     }
- static async Task<string> Worker(HttpMethod method, string path, JsonNode? body = null)
+
+    static async Task<string> Worker(HttpMethod method, string path, JsonNode? body = null)
     {
         var req = new HttpRequestMessage(method, WorkerUrl + path);
         req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", WorkerKey);
@@ -452,6 +496,7 @@ static async Task ProcessPresses()
         if (!resp.IsSuccessStatusCode) throw new Exception($"Worker {(int)resp.StatusCode}: {text}");
         return text;
     }
+
     static async Task<JsonNode> Tg(string method, JsonNode body)
     {
         var resp = await Http.PostAsync($"https://api.telegram.org/bot{TgToken}/{method}",
