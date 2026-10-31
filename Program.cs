@@ -86,6 +86,8 @@ class Program
     static readonly string DbId = Env("NOTION_DB_ID");
     static readonly string TgToken = Env("TELEGRAM_TOKEN");
     static readonly string ChatId = Env("TELEGRAM_CHAT_ID");
+    static readonly string WorkerUrl = Env("WORKER_URL").TrimEnd('/');
+    static readonly string WorkerKey = Env("WORKER_API_KEY");
     static readonly TimeZoneInfo Tz = TimeZoneInfo.FindSystemTimeZoneById(Cfg.TimeZoneId);
     const string StatePath = "state.json";
 
@@ -191,52 +193,58 @@ class Program
     }
 
     // ---------------- الأزرار ----------------
-    static async Task ProcessPresses()
+static async Task ProcessPresses()
+{
+    var items = JsonNode.Parse(await Worker(HttpMethod.Get, "/pending"))!.AsArray();
+    if (items.Count == 0) return;
+
+    var doneKeys = new List<string>();
+    var handled = new HashSet<string>();
+
+    foreach (var it in items)
     {
-        var updates = (await Tg("getUpdates", new JsonObject
-        {
-            ["timeout"] = 0,
-            ["allowed_updates"] = new JsonArray("callback_query")
-        })).AsArray();
-        if (updates.Count == 0) return;
+        var key = it!["key"]!.GetValue<string>();
+        var data = it["data"]?.GetValue<string>() ?? "";
+        if (!data.StartsWith("t|")) { doneKeys.Add(key); continue; }
+        var id = data[2..];
 
-        var counts = new Dictionary<string, int>();
-        var queryIds = new List<string>();
-        long last = 0;
-
-        foreach (var u in updates)
+        try
         {
-            last = Math.Max(last, u!["update_id"]!.GetValue<long>());
-            var cb = u["callback_query"];
-            if (cb == null) continue;
-            if (cb["message"]?["chat"]?["id"]?.GetValue<long>().ToString() != ChatId) continue; // أمان
-            var data = cb["data"]?.GetValue<string>() ?? "";
-            if (!data.StartsWith("t|")) continue;
-            var id = data[2..];
-            counts[id] = counts.GetValueOrDefault(id) + 1;
-            queryIds.Add(cb["id"]!.GetValue<string>());
-        }
-
-        // عدد فردي من الضغطات = تغيير. عدد زوجي = ضغطت بالغلط ورجعت (مفيش تغيير)
-        foreach (var (id, c) in counts.Where(kv => kv.Value % 2 == 1))
-        {
-            var page = await Notion(HttpMethod.Get, $"pages/{id}");
-            bool cur = page["properties"]?[Cfg.PropDone]?["checkbox"]?.GetValue<bool>() ?? false;
-            await Notion(new HttpMethod("PATCH"), $"pages/{id}", new JsonObject
+            if (handled.Add(id))
             {
-                ["properties"] = new JsonObject
+                var page = await Notion(HttpMethod.Get, $"pages/{id}");
+                bool cur = page["properties"]?[Cfg.PropDone]?["checkbox"]?.GetValue<bool>() ?? false;
+                await Notion(new HttpMethod("PATCH"), $"pages/{id}", new JsonObject
                 {
-                    [Cfg.PropDone] = new JsonObject { ["checkbox"] = !cur }
+                    ["properties"] = new JsonObject
+                    {
+                        [Cfg.PropDone] = new JsonObject { ["checkbox"] = !cur }
+                    }
+                });
+
+                string title = "";
+                foreach (var kv in page["properties"]!.AsObject())
+                {
+                    if (kv.Value!["type"]!.GetValue<string>() == "title")
+                    {
+                        title = PlainText(kv.Value["title"]);
+                        break;
+                    }
                 }
-            });
+                await SendText($"✅ <b>تم التغيير</b>\n{Esc(title)} ← {(!cur ? "تمت" : "لسه ماخلصتش")}");
+            }
+            doneKeys.Add(key);
         }
-
-        // تأكيد استلام التحديثات (عشان ماتتعالجش مرتين)
-        await Tg("getUpdates", new JsonObject { ["offset"] = last + 1, ["timeout"] = 0, ["limit"] = 1 });
-
-        foreach (var q in queryIds)
-            await TgSafe("answerCallbackQuery", new JsonObject { ["callback_query_id"] = q });
+        catch (Exception ex) { Console.WriteLine($"Press failed for {id}: {ex.Message}"); }
     }
+
+    if (doneKeys.Count > 0)
+    {
+        var arr = new JsonArray();
+        foreach (var k in doneKeys) arr.Add(k);
+        await Worker(HttpMethod.Post, "/clear", new JsonObject { ["keys"] = arr });
+    }
+}
 
     static async Task SyncButtons(State st, List<TaskItem> tasks)
     {
@@ -434,7 +442,16 @@ class Program
         if (!resp.IsSuccessStatusCode) throw new Exception($"Notion {(int)resp.StatusCode}: {text}");
         return JsonNode.Parse(text)!;
     }
-
+ static async Task<string> Worker(HttpMethod method, string path, JsonNode? body = null)
+    {
+        var req = new HttpRequestMessage(method, WorkerUrl + path);
+        req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", WorkerKey);
+        if (body != null) req.Content = new StringContent(body.ToJsonString(), Encoding.UTF8, "application/json");
+        var resp = await Http.SendAsync(req);
+        var text = await resp.Content.ReadAsStringAsync();
+        if (!resp.IsSuccessStatusCode) throw new Exception($"Worker {(int)resp.StatusCode}: {text}");
+        return text;
+    }
     static async Task<JsonNode> Tg(string method, JsonNode body)
     {
         var resp = await Http.PostAsync($"https://api.telegram.org/bot{TgToken}/{method}",
