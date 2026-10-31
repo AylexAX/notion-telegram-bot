@@ -1,7 +1,7 @@
 {
   "Day": "2026-10-31",
   "MorningSent": true,
-  "AllDoneSent": true,
+  "AllDoneSent": false,
   "NightSent": false,
   "LastReminder": "2026-10-31T23:21:35.6804711+02:00",
   "Cards": {
@@ -11,7 +11,7 @@
     },
     "40ad7df0-d982-80e6-a7bf-f9ca034f9a77": {
       "MessageId": 18,
-      "Done": true
+      "Done": false
     }
   }
 }
