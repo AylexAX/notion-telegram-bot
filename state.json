@@ -1,33 +1,8 @@
 {
-  "Day": "2026-10-31",
-  "MorningSent": true,
+  "Day": "2026-11-01",
+  "MorningSent": false,
   "AllDoneSent": false,
-  "NightSent": true,
-  "LastReminder": "2026-11-01T01:50:52.6611229+02:00",
-  "Cards": {
-    "38dd7df0-d982-806b-80d2-fe9ad4b687fc": {
-      "MessageId": 47,
-      "Done": true,
-      "Title": "PROGRAMING",
-      "Sig": "2D6B52A4E9904551FFB2DDB3B97E6A5A4B318E4EBF4E0EB2F3BF8F310D0EB417"
-    },
-    "40ad7df0-d982-80e6-a7bf-f9ca034f9a77": {
-      "MessageId": 41,
-      "Done": true,
-      "Title": "ENGLISH",
-      "Sig": "26D106962582617935D766A3B95367B53DF4CFCF79C712272DA90567CF48598B"
-    },
-    "40ad7df0-d982-8033-ada2-fd6840eb018a": {
-      "MessageId": 59,
-      "Done": false,
-      "Title": "Task All",
-      "Sig": "752B42E7BED271DC34767646190194D6A37948E0669205023E105CBE48052A8B"
-    },
-    "40ad7df0-d982-808a-be3a-dfdfc738e8ef": {
-      "MessageId": 51,
-      "Done": true,
-      "Title": "ENGLISH",
-      "Sig": "599A39159C29465946C34C094C23C3D6305D01D2541CA2E5C4F74FCE90AE8364"
-    }
-  }
+  "NightSent": false,
+  "LastReminder": "0001-01-01T00:00:00+00:00",
+  "Cards": {}
 }
