@@ -3,13 +3,19 @@
   "MorningSent": true,
   "AllDoneSent": false,
   "NightSent": false,
-  "LastReminder": "2026-11-11T17:15:56.3210584+02:00",
+  "LastReminder": "2026-11-11T17:20:55.2211921+02:00",
   "Cards": {
     "415d7df0-d982-8025-bba1-ef401fc51f2e": {
-      "MessageId": 109,
+      "MessageId": 115,
       "Done": false,
       "Title": "PROGRAMING",
-      "Sig": "C6CEFCAD8D32FE1ECF43AF9266224A576592136C4C82523A6F1A5373DC8CEC94"
+      "Sig": "CB5EFEC26C7132F4A8C8581A4991F8D1404F9CAA81838D0F2CF733442A0E41AE"
+    },
+    "415d7df0-d982-8015-8f30-e66c1415d9f3": {
+      "MessageId": 113,
+      "Done": false,
+      "Title": "PROGRAMING",
+      "Sig": "CB5EFEC26C7132F4A8C8581A4991F8D1404F9CAA81838D0F2CF733442A0E41AE"
     }
   }
 }
