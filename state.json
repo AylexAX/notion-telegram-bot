@@ -1,8 +1,15 @@
 {
   "Day": "2026-11-11",
   "MorningSent": true,
-  "AllDoneSent": true,
+  "AllDoneSent": false,
   "NightSent": false,
-  "LastReminder": "2026-11-11T12:00:55.4973223+02:00",
-  "Cards": {}
+  "LastReminder": "2026-11-11T17:15:56.3210584+02:00",
+  "Cards": {
+    "415d7df0-d982-8025-bba1-ef401fc51f2e": {
+      "MessageId": 109,
+      "Done": false,
+      "Title": "PROGRAMING",
+      "Sig": "C6CEFCAD8D32FE1ECF43AF9266224A576592136C4C82523A6F1A5373DC8CEC94"
+    }
+  }
 }
