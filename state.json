@@ -2,35 +2,35 @@
   "Day": "2026-11-11",
   "MorningSent": true,
   "AllDoneSent": false,
-  "NightSent": false,
-  "LastReminder": "2026-11-11T22:00:57.8224286+02:00",
+  "NightSent": true,
+  "LastReminder": "2026-11-12T00:01:00.837968+02:00",
   "Cards": {
     "415d7df0-d982-8025-bba1-ef401fc51f2e": {
-      "MessageId": 139,
+      "MessageId": 145,
       "Done": false,
       "Title": "PROGRAMING",
       "Sig": "E5B141D8BAFFBBC49D8AA343FC923334D79A58AED5484A78A9EE7FD4F089DE5D"
     },
     "415d7df0-d982-8015-8f30-e66c1415d9f3": {
-      "MessageId": 143,
+      "MessageId": 149,
       "Done": false,
       "Title": "PROGRAMING",
       "Sig": "CB5EFEC26C7132F4A8C8581A4991F8D1404F9CAA81838D0F2CF733442A0E41AE"
     },
     "415d7df0-d982-8063-aa9f-e68e2ace6450": {
-      "MessageId": 140,
+      "MessageId": 146,
       "Done": false,
       "Title": "ENGLISH",
       "Sig": "0264FC27D3974151CDAF9D26A8922467FC40FA5ADD4ADE919398DFEEB7D2A0A6"
     },
     "415d7df0-d982-80e5-ae0a-db7b0acf8367": {
-      "MessageId": 142,
+      "MessageId": 148,
       "Done": false,
       "Title": "Hermes-Setup AI",
       "Sig": "4C931CFFD5A91377AEF6162C81D76916C8D7D7FCFDBC920070B286CEB6797481"
     },
     "415d7df0-d982-8080-aa5c-e00eaba4e152": {
-      "MessageId": 141,
+      "MessageId": 147,
       "Done": false,
       "Title": "ENGLISH",
       "Sig": "599A39159C29465946C34C094C23C3D6305D01D2541CA2E5C4F74FCE90AE8364"
