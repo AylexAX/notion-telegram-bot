@@ -2,7 +2,7 @@
   "Day": "2026-11-23",
   "MorningSent": true,
   "AllDoneSent": true,
-  "NightSent": false,
+  "NightSent": true,
   "LastReminder": "2026-11-23T12:00:54.3784439+02:00",
   "Cards": {}
 }
